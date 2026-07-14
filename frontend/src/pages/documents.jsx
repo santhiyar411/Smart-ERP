@@ -1,21 +1,10 @@
-import { useEffect, useState } from "react";
-import { getDocuments, uploadDocument } from "../services/api";
+import { useState } from "react";
+import { uploadDocument } from "../services/api";
 
 function DocumentsPage() {
-  const [documents, setDocuments] = useState([]);
   const [files, setFiles] = useState([]);
   const [ocrResults, setOcrResults] = useState({});
   const [isUploading, setIsUploading] = useState(false);
-
-  const loadDocuments = () => {
-    getDocuments()
-      .then((res) => setDocuments(res.data || []))
-      .catch((err) => console.error("Failed to load documents", err));
-  };
-
-  useEffect(() => {
-    loadDocuments();
-  }, []);
 
   const formatSize = (size) => {
     if (size < 1024) return `${size} B`;
@@ -58,7 +47,6 @@ function DocumentsPage() {
           ...prev,
           [entry.id]: buildSummary(res.data),
         }));
-        loadDocuments();
       } catch (err) {
         setOcrResults((prev) => ({
           ...prev,
@@ -99,22 +87,6 @@ function DocumentsPage() {
         </label>
 
         {isUploading && <div style={{ marginTop: 10, color: "#2563eb", fontWeight: 600 }}>Uploading and processing...</div>}
-      </div>
-
-      <div style={{ background: "#fff", borderRadius: 16, padding: 18, marginBottom: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Saved Documents from Database</h3>
-        {documents.length === 0 ? (
-          <div style={{ color: "#64748b" }}>No documents found in the database yet.</div>
-        ) : (
-          documents.map((doc) => (
-            <div key={doc.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>{doc.file_path.split(/[\\/]/).pop()}</div>
-              <div style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>
-                Type: {doc.document_type} • Uploaded: {doc.upload_date || "N/A"}
-              </div>
-            </div>
-          ))
-        )}
       </div>
 
       {files.length > 0 && (
