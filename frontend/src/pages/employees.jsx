@@ -68,20 +68,20 @@ function EmployeesPage() {
     <div style={{ padding: 24 }}>
       <h2>Employees</h2>
 
-      <form onSubmit={handleSubmit} style={{ background: "#f8fafc", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <form onSubmit={handleSubmit} style={{ background: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-          <input placeholder="Employee Code" value={form.employee_code} onChange={(e) => setForm({ ...form, employee_code: e.target.value })} />
-          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
-          <input placeholder="Designation" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
-          <input placeholder="Joining Date" value={form.joining_date} onChange={(e) => setForm({ ...form, joining_date: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Employee Code" value={form.employee_code} onChange={(e) => setForm({ ...form, employee_code: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Designation" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
+          <input style={{ background: "#fff", border: "1px solid #d1d5db", color: "#0f172a", borderRadius: 10, padding: "10px 12px" }} placeholder="Joining Date" value={form.joining_date} onChange={(e) => setForm({ ...form, joining_date: e.target.value })} />
         </div>
         <button type="submit" style={{ marginTop: 12 }}>{editingId ? "Update Employee" : "Add Employee"}</button>
       </form>
 
-      <div style={{ background: "#fff", borderRadius: 16, padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: 16, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)" }}>
         {employees.length === 0 ? (
           <p style={{ color: "#64748b" }}>No employees found in the database.</p>
         ) : (

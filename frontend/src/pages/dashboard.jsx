@@ -24,21 +24,21 @@ function DashboardPage() {
       <h2>Dashboard</h2>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-        <div style={{ background: "#f8fafc", borderRadius: 16, padding: 18 }}>
-          <div style={{ color: "#64748b", fontSize: 13 }}>Employees</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{summary.total_employees}</div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 18, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)" }}>
+          <div style={{ color: "#475569", fontSize: 13 }}>Employees</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a" }}>{summary.total_employees}</div>
         </div>
-        <div style={{ background: "#f8fafc", borderRadius: 16, padding: 18 }}>
-          <div style={{ color: "#64748b", fontSize: 13 }}>Active Projects</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{summary.active_projects}</div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 18, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)" }}>
+          <div style={{ color: "#475569", fontSize: 13 }}>Active Projects</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a" }}>{summary.active_projects}</div>
         </div>
-        <div style={{ background: "#f8fafc", borderRadius: 16, padding: 18 }}>
-          <div style={{ color: "#64748b", fontSize: 13 }}>Documents</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{summary.documents_uploaded}</div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 18, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)" }}>
+          <div style={{ color: "#475569", fontSize: 13 }}>Documents</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a" }}>{summary.documents_uploaded}</div>
         </div>
-        <div style={{ background: "#f8fafc", borderRadius: 16, padding: 18 }}>
-          <div style={{ color: "#64748b", fontSize: 13 }}>Pending OCR</div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{summary.pending_ocr}</div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: 18, boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)" }}>
+          <div style={{ color: "#475569", fontSize: 13 }}>Pending OCR</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a" }}>{summary.pending_ocr}</div>
         </div>
       </div>
 
@@ -47,9 +47,9 @@ function DashboardPage() {
         {departments.length === 0 ? (
           <p style={{ color: "#64748b" }}>No department data yet.</p>
         ) : (
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {departments.map((item) => (
-              <li key={item.label}>
+              <li key={item.label} style={{ color: "#0f172a", marginBottom: 8 }}>
                 {item.label}: {item.value}
               </li>
             ))}

@@ -362,9 +362,11 @@ const styles = {
     maxWidth: "420px",
     padding: "10px 12px",
     borderRadius: "10px",
-    border: "1px solid #dbe2ea",
+    border: "1px solid #cbd5e1",
     outline: "none",
     fontSize: "14px",
+    background: "#fff",
+    color: "#0f172a",
   },
   tableCard: {
     background: "#fff",

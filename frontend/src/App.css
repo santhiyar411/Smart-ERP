@@ -19,7 +19,7 @@ body {
   width: 280px;
   padding: 24px 18px;
   background: #0f172a;
-  color: #fff;
+  color: black;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -39,12 +39,13 @@ body {
   border-radius: 12px;
   font-weight: 700;
   background: linear-gradient(135deg, #2563eb, #38bdf8);
-  color: white;
+  color: black;
 }
 
 .brand-block h1 {
   margin: 0;
   font-size: 20px;
+  
 }
 
 .brand-block p {
@@ -106,6 +107,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  
 }
 
 .topbar {
@@ -122,18 +124,19 @@ body {
   margin: 0 0 4px;
   font-size: 12px;
   text-transform: uppercase;
-  color: #64748b;
+  color: black;
   letter-spacing: 0.08em;
 }
 
 .topbar h2 {
   margin: 0;
   font-size: 24px;
+  color:black;
 }
 
 .topbar-description {
   margin: 4px 0 0;
-  color: #64748b;
+  color: black;
 }
 
 .content-card {
@@ -141,6 +144,7 @@ body {
   border-radius: 18px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
   min-height: 70vh;
+  
 }
 
 .counter {
