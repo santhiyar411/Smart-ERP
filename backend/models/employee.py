@@ -16,4 +16,5 @@ class Employee(Base):
     designation = Column(String(200), nullable=True)
     joining_date = Column(String(50), nullable=True)
 
-    documents = relationship("Document", back_populates="employee")
+    documents = relationship("Document", back_populates="employee", cascade="all, delete-orphan")
+    skills = relationship("EmployeeSkill", back_populates="employee", cascade="all, delete-orphan")
