@@ -87,21 +87,72 @@ def _looks_like_name(candidate):
     return cleaned.isupper() or bool(re.search(r"[A-Z][a-z]", cleaned))
 
 
+def extract_certifications(text):
+    certs = []
+    lines = text.splitlines()
+    cert_keywords = ["certified", "certification", "certificate", "credential", "license"]
+    for line in lines:
+        line_strip = line.strip()
+        if len(line_strip) < 3 or len(line_strip) > 100:
+            continue
+        if any(kw in line_strip.lower() for kw in cert_keywords):
+            cleaned = re.sub(r"^[*+\-\s•\d.]+", "", line_strip).strip()
+            # Avoid section headers
+            if cleaned.lower() in ["certifications", "certificates", "certification & licenses", "licenses & certifications"]:
+                continue
+            certs.append(cleaned)
+    return list(dict.fromkeys(certs)) if certs else []
+
+
+def extract_experience(text):
+    # Try searching for years of experience
+    match = re.search(r"(\b\d+\+?\s*(?:years?|yrs?)(?:\s+of)?\s+experience\b)", text, re.I)
+    if match:
+        return match.group(1).strip()
+
+    # Try searching for "Experience" section
+    lines = text.splitlines()
+    exp_header = False
+    exp_lines = []
+    for line in lines:
+        line_strip = line.strip()
+        if re.search(r"^(?:work\s+|professional\s+)?experience\b", line_strip, re.I):
+            exp_header = True
+            continue
+        if exp_header:
+            # Stop when hitting another header
+            if re.search(r"^(?:education|skills|certifications|projects|summary|about|languages|contact)\b", line_strip, re.I):
+                break
+            if line_strip:
+                exp_lines.append(line_strip)
+                if len(exp_lines) >= 4:
+                    break
+
+    if exp_lines:
+        return "\n".join(exp_lines).strip()
+    return None
+
+
 def extract_employee_info(text, source_name=None):
     if not text:
         return {
             "name": None,
             "email": None,
-            "phone_number": None,
+            "phone": None,
             "skills": [],
             "degree": None,
+            "certifications": [],
+            "experience": None,
+            "raw_text": ""
         }
 
     text = str(text)
 
+    # 1. Email Extraction
     email_matches = re.findall(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", text)
     email = email_matches[0] if email_matches else None
 
+    # 2. Phone Extraction (returning None instead of N/A if missing)
     phone_matches = re.findall(r"(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)", text)
     phone = None
     for candidate in phone_matches:
@@ -110,8 +161,8 @@ def extract_employee_info(text, source_name=None):
             phone = candidate.strip()
             break
 
+    # 3. Name Extraction
     name = None
-
     filename_name = _infer_name_from_filename(source_name)
     if filename_name and _looks_like_name(filename_name):
         name = filename_name
@@ -119,7 +170,6 @@ def extract_employee_info(text, source_name=None):
     if not name:
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         scored_names = []
-
         for index, line in enumerate(lines[:12]):
             cleaned = re.sub(r"\s+", " ", line).strip()
             if not _looks_like_name(cleaned):
@@ -146,34 +196,86 @@ def extract_employee_info(text, source_name=None):
     if not name and email:
         local = email.split("@")[0]
         local = re.sub(r"\d+", "", local)
-        name = _normalize_name(local.replace(".", " ").replace("_", " "))
+        name = local.replace(".", " ").replace("_", " ")
 
-    skills_keywords = [
-        "python", "javascript", "react", "java", "sql", "flask", "django", "fastapi",
-        "html", "css", "node", "typescript", "postgresql", "postgres", "mysql",
-        "mongodb", "docker", "aws", "azure", "git", "linux", "bootstrap", "tailwind",
-        "c++", "c#", "php", "pandas", "numpy", "pytorch", "tensorflow"
-    ]
+    name = _normalize_name(name)
 
-    found_skills = []
-    for skill in skills_keywords:
-        if re.search(rf"\b{re.escape(skill)}\b", text, flags=re.I):
-            found_skills.append(skill.title())
+    # 4. Skills Dictionary matching: case-insensitive & exact boundaries
+    SKILL_MAP = {
+        "python": "Python",
+        "java": "Java",
+        "c\\+\\+": "C++",
+        "sql": "SQL",
+        "react": "React",
+        "node\\.js": "Node.js",
+        "node": "Node.js",
+        "express\\.js": "Express.js",
+        "express": "Express.js",
+        "mongodb": "MongoDB",
+        "postgresql": "PostgreSQL",
+        "postgres": "PostgreSQL",
+        "flask": "Flask",
+        "django": "Django",
+        "machine\\s+learning": "Machine Learning",
+        "deep\\s+learning": "Deep Learning",
+        "data\\s+analytics": "Data Analytics",
+        "power\\s+bi": "Power BI",
+        "aws": "AWS",
+        "docker": "Docker",
+        "kubernetes": "Kubernetes",
+        "html": "HTML",
+        "css": "CSS",
+        "javascript": "JavaScript",
+        "js": "JavaScript",
+        "git": "Git",
+        "rest\\s+api": "REST API",
+        "tensorflow": "TensorFlow",
+        "pytorch": "PyTorch",
+        "mern\\s+stack": "MERN Stack",
+        "mern": "MERN Stack",
+        "ocr": "OCR",
+        "tesseract": "OCR",
+        "pymupdf": "OCR"
+    }
 
+    found_skills_set = set()
+    for regex_pattern, skill_display in SKILL_MAP.items():
+        if re.search(rf"\b{regex_pattern}\b", text, flags=re.I):
+            found_skills_set.add(skill_display)
+
+    found_skills = sorted(list(found_skills_set))
+
+    # 5. Degree Extraction (e.g. Master, B.Tech, etc.)
     degree_patterns = [
-        r"\b(B\.?Tech|BTech|B\.?E|BE|M\.?Tech|MTech|MBA|MCA|B\.?Sc|M\.?Sc|BCA|BBA|Ph\.?D)\b"
+        r"\b(B\.?Tech|BTech|B\.?E|BE|M\.?Tech|MTech|MBA|MCA|B\.?Sc|M\.?Sc|BCA|BBA|Ph\.?D|Bachelor\s+of\s+[A-Za-z]+|Master\s+of\s+[A-Za-z]+|BS\b|MS\b)\b"
     ]
     degree = None
     for pattern in degree_patterns:
         match = re.search(pattern, text, flags=re.I)
         if match:
-            degree = match.group(0).upper()
+            # Clean dot notations
+            deg_val = match.group(0).upper().replace(".", "")
+            if deg_val == "BS":
+                degree = "B.Sc"
+            elif deg_val == "MS":
+                degree = "M.Sc"
+            else:
+                degree = match.group(0).strip()
             break
 
+    # 6. Certifications
+    certifications = extract_certifications(text)
+
+    # 7. Experience
+    experience = extract_experience(text)
+
     return {
-        "name": _normalize_name(name),
+        "name": name,
         "email": email,
-        "phone_number": phone,
+        "phone": phone,
         "skills": found_skills,
         "degree": degree,
+        "certifications": certifications,
+        "experience": experience,
+        "raw_text": text
     }

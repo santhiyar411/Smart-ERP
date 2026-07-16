@@ -22,42 +22,11 @@ def allowed_file(filename):
     ext = Path(filename).suffix.lower()
     return ext in ALLOWED_EXTENSIONS
 
+from services.ocr_service import extract_text_from_file_path
+
 def parse_document_text(file_path):
-    ext = file_path.suffix.lower()
-    text = ""
-    
-    if ext in {".png", ".jpg", ".jpeg"}:
-        try:
-            from PIL import Image
-            import pytesseract
-            text = pytesseract.image_to_string(Image.open(file_path))
-        except Exception as e:
-            text = f"[OCR Image Parse Error]: {str(e)}"
-    elif ext == ".pdf":
-        try:
-            import pypdf
-            reader = pypdf.PdfReader(file_path)
-            pages_text = []
-            for page in reader.pages:
-                t = page.extract_text()
-                if t:
-                    pages_text.append(t)
-            text = "\n".join(pages_text)
-            
-            # Scanned fallback (or empty pdf pages)
-            if not text.strip():
-                # Just mock scanned pdf fallback
-                text = "Scanned PDF document text parsing placeholder."
-        except Exception as e:
-            text = f"[PDF Read Error]: {str(e)}"
-    elif ext == ".txt":
-        try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                text = f.read()
-        except Exception as e:
-            text = f"[TXT Read Error]: {str(e)}"
-            
-    return text
+    text, status = extract_text_from_file_path(file_path)
+    return text, status
 
 @document_bp.route("", methods=["GET"])
 @token_required
@@ -100,16 +69,16 @@ def upload_document():
         return jsonify({"error": f"Failed to save file: {str(e)}"}), 500
 
     # Parse file path
-    extracted_text = parse_document_text(file_path)
+    extracted_text, ocr_status = parse_document_text(file_path)
+
+    # Logging backend data
+    print(f"[OCR BACKEND LOG] Uploaded filename: {filename}")
+    print(f"[OCR BACKEND LOG] Raw extracted text length: {len(extracted_text) if extracted_text else 0}")
+    print(f"[OCR BACKEND LOG] OCR status: {ocr_status}")
     
     # Run AI extract
     info = extract_employee_info(extracted_text, source_name=filename)
     
-    # Determine which employee to link
-    # Strategy: 
-    # 1. If currently logged in as a normal Employee, find by email or employee_id
-    # 2. Or if parsing info has email, search employee DB
-    # 3. Else fallback to logged in user's profile reference, or create candidate
     session = SessionLocal()
     employee_id = None
     target_email = info.get("email") or request.current_user["email"]
@@ -136,6 +105,12 @@ def upload_document():
             session.commit()
             session.refresh(emp)
             
+        # Update employee phone or name if parsed and empty
+        if info.get("phone") and not emp.phone:
+            emp.phone = info.get("phone")
+        if info.get("name") and emp.name == request.current_user["full_name"]:
+            emp.name = info.get("name")
+
         employee_id = emp.employee_id
         
         # Save document entry
@@ -155,7 +130,6 @@ def upload_document():
             session.query(EmployeeSkill).filter(EmployeeSkill.employee_id == employee_id).delete()
             # Add new skills
             for idx, skill in enumerate(extracted_skills):
-                # Distribute proficiency scores nicely
                 p_score = 4 if idx % 2 == 0 else 5
                 es = EmployeeSkill(
                     employee_id=employee_id,
@@ -165,14 +139,23 @@ def upload_document():
                 session.add(es)
                 
         session.commit()
+        print(f"[DB LOG] Successfully saved document and employee information to database. Status: SUCCESS")
+
+        # Automatically calculate and store recommendations
+        from routes.recommendations_route import generate_and_save_recs_for_employee
+        generate_and_save_recs_for_employee(employee_id, session)
+
         return jsonify({
             "message": "Qualifications parsed successfully!",
             "extracted_info": {
                 "name": info.get("name"),
                 "email": info.get("email"),
-                "phone": info.get("phone_number"),
+                "phone": info.get("phone"),
                 "skills": info.get("skills"),
-                "degree": info.get("degree")
+                "degree": info.get("degree"),
+                "certifications": info.get("certifications"),
+                "experience": info.get("experience"),
+                "raw_text": info.get("raw_text")
             },
             "linked_employee": emp.name,
             "employee_id": employee_id
@@ -180,6 +163,7 @@ def upload_document():
         
     except Exception as exc:
         session.rollback()
+        print(f"[DB LOG ERROR] Failed to save document: {str(exc)}. Status: FAILED")
         return jsonify({"error": f"Failed database sync: {str(exc)}"}), 500
     finally:
         session.close()

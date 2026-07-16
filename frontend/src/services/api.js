@@ -61,5 +61,7 @@ export const uploadDocument = (formData) =>
 // Recommendations
 export const getProjectRecommendations = (projectId) => api.get(`/recommendations/project/${projectId}`);
 export const getEmployeeRecommendations = (employeeId) => api.get(`/recommendations/employee/${employeeId}`);
+export const assignRecommendedProject = (employeeId, projectTitle) =>
+  api.post("/recommendations/assign", { employee_id: employeeId, project_title: projectTitle });
 
 export default api;

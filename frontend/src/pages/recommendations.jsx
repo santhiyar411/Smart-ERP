@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProjects, getEmployees, getProjectRecommendations, getEmployeeRecommendations } from "../services/api";
+import { getProjects, getEmployees, getProjectRecommendations, getEmployeeRecommendations, assignRecommendedProject } from "../services/api";
 
 function RecommendationsPage() {
     const [projects, setProjects] = useState([]);
@@ -12,11 +12,11 @@ function RecommendationsPage() {
     const [loadingProject, setLoadingProject] = useState(false);
     const [loadingEmployee, setLoadingEmployee] = useState(false);
 
-    useEffect(() => {
+    const loadData = () => {
         getProjects()
             .then((res) => {
                 setProjects(res.data || []);
-                if (res.data && res.data.length > 0) {
+                if (res.data && res.data.length > 0 && !selectedProjectId) {
                     setSelectedProjectId(res.data[0].project_id);
                 }
             })
@@ -25,11 +25,15 @@ function RecommendationsPage() {
         getEmployees()
             .then((res) => {
                 setEmployees(res.data || []);
-                if (res.data && res.data.length > 0) {
-                    setSelectedEmployeeId(res.data[0].id);
+                if (res.data && res.data.length > 0 && !selectedEmployeeId) {
+                    setSelectedEmployeeId(res.data[0].id || res.data[0].employee_id);
                 }
             })
             .catch((err) => console.error("Failed to load employees", err));
+    };
+
+    useEffect(() => {
+        loadData();
     }, []);
 
     useEffect(() => {
@@ -59,6 +63,32 @@ function RecommendationsPage() {
             setEmployeeRecs(null);
         }
     }, [selectedEmployeeId]);
+
+    const handleAssign = (projectTitle) => {
+        if (!selectedEmployeeId) {
+            alert("Please select an employee first.");
+            return;
+        }
+        assignRecommendedProject(selectedEmployeeId, projectTitle)
+            .then((res) => {
+                alert(res.data.message || `Successfully assigned employee to project: ${projectTitle}`);
+                // Refresh data
+                loadData();
+                if (selectedEmployeeId) {
+                    setLoadingEmployee(true);
+                    getEmployeeRecommendations(selectedEmployeeId)
+                        .then((res2) => {
+                            setEmployeeRecs(res2.data || null);
+                        })
+                        .catch((err) => console.error(err))
+                        .finally(() => setLoadingEmployee(false));
+                }
+            })
+            .catch((err) => {
+                console.error("Assignment failed", err);
+                alert(err.response?.data?.error || "Failed to assign employee to project.");
+            });
+    };
 
     return (
         <div style={styles.container}>
@@ -161,7 +191,7 @@ function RecommendationsPage() {
                         >
                             <option value="">-- Choose Employee --</option>
                             {employees.map((emp) => (
-                                <option key={emp.id} value={emp.id}>
+                                <option key={emp.id || emp.employee_id} value={emp.id || emp.employee_id}>
                                     {emp.name} ({emp.department || "No Dept"})
                                 </option>
                             ))}
@@ -191,7 +221,10 @@ function RecommendationsPage() {
                                     <div key={index} style={styles.recItem}>
                                         <div style={styles.recHeader}>
                                             <div>
-                                                <div style={styles.recName}>{rec.project_name}</div>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <span style={styles.recName}>{rec.project_name}</span>
+                                                    <span style={styles.difficultyBadge(rec.difficulty)}>{rec.difficulty || "General"}</span>
+                                                </div>
                                                 <div style={styles.recDesc}>{rec.description || "No project description."}</div>
                                             </div>
                                             <div style={styles.scoreBadge(rec.match_percentage)}>
@@ -215,6 +248,13 @@ function RecommendationsPage() {
                                                 ))}
                                                 {rec.missing_skills.length === 0 && <span style={{ color: "#166534", fontWeight: 650 }}>Matches All constraints!</span>}
                                             </div>
+
+                                            <button
+                                                onClick={() => handleAssign(rec.project_name)}
+                                                style={styles.assignButton}
+                                            >
+                                                Assign Employee to Project
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -364,7 +404,8 @@ const styles = {
     recDesc: {
         fontSize: "12px",
         color: "#64748b",
-        marginTop: "2px",
+        marginTop: "6px",
+        lineHeight: "1.5"
     },
     scoreBadge: (score) => {
         let bg = "#fee2e2";
@@ -385,12 +426,35 @@ const styles = {
             fontWeight: "700",
         };
     },
+    difficultyBadge: (difficulty) => {
+        let bg = "#f1f5f9";
+        let color = "#475569";
+        if (difficulty === "Advanced") {
+            bg = "#faf5ff";
+            color = "#6b21a8";
+        } else if (difficulty === "Intermediate") {
+            bg = "#eff6ff";
+            color = "#1e40af";
+        } else if (difficulty === "Beginner") {
+            bg = "#f0fdf4";
+            color = "#166534";
+        }
+        return {
+            background: bg,
+            color: color,
+            padding: "2px 8px",
+            borderRadius: "4px",
+            fontSize: "11px",
+            fontWeight: "600",
+            textTransform: "uppercase"
+        };
+    },
     metadataZone: {
         borderTop: "1px dashed #f1f5f9",
-        paddingTop: "10px",
+        paddingTop: "12px",
         display: "flex",
         flexDirection: "column",
-        gap: "6px",
+        gap: "8px",
     },
     subLabel: {
         fontSize: "11px",
@@ -423,6 +487,20 @@ const styles = {
         borderRadius: "15px",
         fontSize: "11px",
         fontWeight: "600",
+    },
+    assignButton: {
+        alignSelf: "flex-start",
+        marginTop: "10px",
+        padding: "8px 16px",
+        borderRadius: "8px",
+        background: "#2563eb",
+        color: "#fff",
+        border: "none",
+        fontSize: "12px",
+        fontWeight: "650",
+        cursor: "pointer",
+        transition: "background 0.2s",
+        boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)",
     },
     empty: {
         color: "#94a3b8",

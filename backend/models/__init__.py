@@ -5,6 +5,7 @@ from .documents import Document
 from .users import User
 from .employee_skills import EmployeeSkill
 from .project_requirements import ProjectRequirement
+from .recommended_projects import RecommendedProject
 
 __all__ = [
     "Base",
@@ -15,4 +16,5 @@ __all__ = [
     "User",
     "EmployeeSkill",
     "ProjectRequirement",
+    "RecommendedProject",
 ]
